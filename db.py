@@ -1,34 +1,25 @@
+import uuid
+import datetime
 import pymongo
-from model import SensorModel
-from typing import List, Dict, Any
-client = pymongo.MongoClient("mongodb+srv://greatwindmill:<password>@gwd.boccfcn.mongodb.net/?retryWrites=true&w=majority")
 
-# Test DB Connection
-db = client.test
+client = pymongo.MongoClient("mongodb+srv://greatwindmill:ptm5oyCJ0FW1dFkx@gwd.boccfcn.mongodb.net/?retryWrites=true&w=majority")
+db = client.MyDatabase
+collection = db.MyCollection
 
-# Create DB
-TDb = client["data"]
-TSensor = TDb['sensor']
+def save_to_db(kecepatan,latitude,longitude) -> tuple:
+    try:
+        data = {
+            "ID_Transaksi": str(uuid.uuid4()),
+            "Kecepatan": kecepatan,
+            "latitude": latitude,
+            "longitude": longitude,
+            "timestamp": datetime.datetime.now()
+        }
+        # insert data
+        rec_id1 = collection.insert_one(data)
 
+        print("Data inserted with record ids",rec_id1)
+        return True,None
+    except Exception as e:
+        return False,str(e)
 
-def db_create_sensor(sensor: SensorModel) -> bool:
-    TSensor.insert_one(sensor.__dict__)
-
-
-def db_update_sensor(sensor_id: str, sensor: Dict[str, Any]) -> bool:
-    res = TSensor.update_one({"id": sensor_id}, {"$set": sensor})
-    return res.modified_count > 0
-
-
-def db_list_sensors() -> List[SensorModel]:
-    return [SensorModel.from_dict(r) for r in TSensor.find()]
-
-
-def db_retrieve_sensor(sensor_id: str) -> SensorModel:
-    _sensor = TSensor.find_one({"id": sensor_id})
-    return SensorModel.from_dict(_sensor) if _sensor else None
-
-
-def db_delete_sensor(sensor_id: str) -> bool:
-    res = TSensor.delete_one({"id": sensor_id})
-    return res.deleted_count > 0
